@@ -31,7 +31,20 @@ normaliseASPath pas = let toASPath4' (PathAttributeASPath p) = PathAttributeASPa
 getAS2Path = fromJust . getPathAttribute TypeCodePathAttributeASPath
 getAS4Path = fromJust . getPathAttribute TypeCodePathAttributeAS4Path
 
-getASPath pax = fromMaybe (getAS2Path pax) (getPathAttribute TypeCodePathAttributeAS4Path pax)
+getASPathAttribute pax = fromMaybe (getAS2Path pax) (getPathAttribute TypeCodePathAttributeAS4Path pax)
+getASPath = unwrapASPath . getASPathAttribute where
+    unwrapASPath (PathAttributeASPath asPath) = asPath
+
+getASPathContent = unwrapSegments . toASPath4 . getASPath where
+    unwrapSegments (ASPath4 segments) = segments
+-- getASPathContent (PathAttributeASPath (ASPath4 segments)) = segments
+-- getASPathContent (PathAttributeASPath (ASPath2 segments)) = map toASPath4 segments
+
+getASPathOrigin = getLastASN . last . getASPathContent
+
+-- getLastASN :: ASSegment Word32 -> Word32
+getLastASN (ASSequence ax) = last ax
+getLastASN (ASSet ax) = head ax
 
 setLocalPref :: Word32 -> [PathAttribute] -> [PathAttribute]
 setLocalPref = insertPathAttribute . PathAttributeLocalPref
