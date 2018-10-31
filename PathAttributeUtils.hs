@@ -34,12 +34,14 @@ getAS4Path = fromJust . getPathAttribute TypeCodePathAttributeAS4Path
 getASPathAttribute pax = fromMaybe (getAS2Path pax) (getPathAttribute TypeCodePathAttributeAS4Path pax)
 getASPath = unwrapASPath . getASPathAttribute where
     unwrapASPath (PathAttributeASPath asPath) = asPath
+    unwrapASPath (PathAttributeAS4Path asPath) = asPath
 
 getASPathContent = unwrapSegments . toASPath4 . getASPath where
     unwrapSegments (ASPath4 segments) = segments
 -- getASPathContent (PathAttributeASPath (ASPath4 segments)) = segments
 -- getASPathContent (PathAttributeASPath (ASPath2 segments)) = map toASPath4 segments
 
+getASPathSegmentCount = length . getASPathContent
 getASPathOrigin = getLastASN . last . getASPathContent
 
 -- getLastASN :: ASSegment Word32 -> Word32

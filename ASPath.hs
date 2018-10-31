@@ -41,6 +41,15 @@ instance ASNumber Word32 where
 data ASPath = ASPath2 [ASSegment Word16] | ASPath4 [ASSegment Word32] deriving (Show,Eq)
 data ASSegment asn = ASSet [asn] | ASSequence [asn] deriving (Show,Eq) 
 
+isASSet (ASSet _) = True
+isASSet _ = False
+
+isASSequence = not . isASSet
+
+isSingletonASSet :: ASSegment t -> Bool
+isSingletonASSet (ASSet (asn:[])) = True
+isSingletonASSet _ = False
+
 instance Functor ASSegment where
     fmap f (ASSet asnx) = ASSet (map f asnx)
     fmap f (ASSequence asnx) = ASSequence (map f asnx)
