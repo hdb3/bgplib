@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-#LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 module PathAttributes (module Codes, module PathAttributes, module ASPath) where
 import Data.Binary(Binary(..),encode,decode)
 import Data.Binary.Get
@@ -8,6 +9,8 @@ import Data.Binary.Put
 import Data.Word
 import Data.List(find, deleteBy, sortOn)
 import Data.IP
+import Data.Hashable
+import GHC.Generics(Generic)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
 import Control.Monad
@@ -64,7 +67,9 @@ data PathAttribute = PathAttributeOrigin Word8 | -- toDo = make the parameter an
                      PathAttributeLargeCommunity [LargeCommunity] |
                      PathAttributeAttrSet B.ByteString |
                      PathAttributeUnknown B.ByteString
-                     deriving (Show,Eq)
+                     deriving (Show,Eq,Generic)
+instance Hashable PathAttribute
+instance Hashable IPv4
 
 -- binary format for attributes is 1 byte flags, 1 byte type code, 1 or 2 byte length value depending on a flag bit, then payload
 
