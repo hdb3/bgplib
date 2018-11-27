@@ -16,8 +16,8 @@ import Data.Monoid((<>))
 
 import LibCommon
 
-!lBGPMarker = L.replicate 16 0xff
-!_BGPMarker = B.replicate 16 0xff
+lBGPMarker = L.replicate 16 0xff
+_BGPMarker = B.replicate 16 0xff
 data RcvStatus =   Timeout | EndOfStream | Error String deriving (Eq,Show)
 
 newtype BGPByteString = BGPByteString (Either RcvStatus L.ByteString) deriving Eq

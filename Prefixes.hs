@@ -70,7 +70,9 @@ instance Show IPrefix where
     show = show.toAddrRange.toPrefix
 
 realShow = show . map toAddrRange
-shorten pfxs = if length pfxs < 3 then realShow pfxs else show (take 2 pfxs) ++ "(+" ++ show (length pfxs - 2) ++ ")"
+shortenLim l pfxs = if length pfxs < (l+1) then realShow pfxs else show (take l pfxs) ++ "(+" ++ show (length pfxs - l) ++ ")"
+-- shorten pfxs = if length pfxs < 3 then realShow pfxs else show (take 2 pfxs) ++ "(+" ++ show (length pfxs - 2) ++ ")"
+shorten = shortenLim 4
 
 subnet :: Prefix -> Word8
 subnet (Prefix (s,_)) = s
