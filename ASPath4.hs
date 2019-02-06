@@ -3,7 +3,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
 {-# LANGUAGE DeriveGeneric #-}
-module ASPath where
+module ASPath4 where
+
+-- this interface masks AS2/AS4 encoding - all AS numbers are simply Word32
+
 import Data.Binary
 import Data.Binary.Get
 import Data.List(foldl')
@@ -30,59 +33,41 @@ import LibCommon
 -- note: 4 byte AS numbers may be used inthe AS PATH as well as in the AS4_PATH
 -- therefore decoding AS_PATH requires to know whether 2 or 4 byte AS numbers are in use.
 
-instance {-# OVERLAPPING #-}(ASNumber asn) =>  Binary [ASSegment asn] where
-    put = putn
-    get = getn
+type ASNumber = Word32
+type ASPath = [ASSegment]
 
-class (Eq a, Num a, Integral a, Show a, Read a, Binary a) => ASNumber a where
-    putASSegmentElement :: ASSegmentElementTypeCode -> [a] -> Put
-    putASSegmentElement code asns = do putWord8 (encode8 code)
-                                       putWord8 (fromIntegral $ length asns)
-                                       putn asns
-
-instance ASNumber Word16 where
-instance ASNumber Word32 where
-data ASPath = ASPath2 [ASSegment Word16] | ASPath4 [ASSegment Word32] deriving (Show,Eq,Generic)
-
-instance Hashable ASPath
-data ASSegment asn = ASSet [asn] | ASSequence [asn] deriving (Show,Eq,Generic) 
-
-instance Hashable ( ASSegment Word16 )
-instance Hashable ( ASSegment Word32 )
+data ASSegment = ASSet [ASNumber] | ASSequence [ASNumber] deriving (Show,Eq,Generic) 
+--instance Hashable ASPath
+instance Hashable ASSegment
 
 isASSet (ASSet _) = True
 isASSet _ = False
 
 isASSequence = not . isASSet
 
-isSingletonASSet :: ASSegment t -> Bool
+isSingletonASSet :: ASSegment -> Bool
 isSingletonASSet (ASSet [_]) = True
 isSingletonASSet _ = False
 
-instance Functor ASSegment where
-    fmap f (ASSet asnx) = ASSet (map f asnx)
-    fmap f (ASSequence asnx) = ASSequence (map f asnx)
+--instance Functor ASSegment where
+    --fmap f (ASSet asnx) = ASSet (map f asnx)
+    --fmap f (ASSequence asnx) = ASSequence (map f asnx)
 
 -- i really wanted fmap bu don't know how to make the list a functor....
 -- also this looks like a fold, but.....
-gmap :: (a -> b) -> [ASSegment a] -> [ASSegment b] 
-gmap _ [] = []
-gmap f (ASSet a : ax) = ASSet (fmap f a) : gmap f ax
-gmap f (ASSequence a : ax) = ASSequence (fmap f a) : gmap f ax
-
--- note that the inverse to 'toASPath4' would potentially truncate 32 bit ASNs so unless there is a valid
--- reason for allowing this, i won't write it...
-toASPath4 :: ASPath -> ASPath
-toASPath4 (ASPath2 aspath) = ASPath4 (gmap fromIntegral aspath)
-toASPath4 (ASPath4 aspath) = ASPath4 aspath
+--gmap :: (a -> b) -> [ASSegment a] -> [ASSegment b] 
+--gmap _ [] = []
+--gmap f (ASSet a : ax) = ASSet (fmap f a) : gmap f ax
+--gmap f (ASSequence a : ax) = ASSequence (fmap f a) : gmap f ax
 
 -- NOTE** the below 'raw' asPrePend function masks the complexity of mixing ASN2 and ASN4 operations
 -- a complete version would have to operate on AS4 paths and ASPaths and use 'AS_TRANS'
 -- however as long as the asnumber is below 2^16 there should be no problem...
 -- note the guard function is null since the actual type of the ASPath will protect it.....
-asPrePend :: ASNumber a => a -> ASPath -> ASPath
-asPrePend asn (ASPath2 asp) | asn < 2^16 = ASPath2 (asPrePend' (fromIntegral asn) asp)
-asPrePend asn (ASPath4 asp) = ASPath4 (asPrePend' (fromIntegral asn) asp)
+asPrePend :: ASNumber -> ASPath -> ASPath
+--asPrePend asn (ASPath2 asp) | asn < 2^16 = ASPath2 (asPrePend' (fromIntegral asn) asp)
+--asPrePend asn (ASPath4 asp) = ASPath4 (asPrePend' (fromIntegral asn) asp)
+asPrePend = asPrePend'
 
 asPrePend' asn [] = [ASSequence [asn]]
 asPrePend' asn (ASSet sets : segs) = ASSequence [asn] : ASSet sets : segs
@@ -90,9 +75,9 @@ asPrePend' asn (ASSequence seqs : segs) | length seqs < 255 = ASSequence (asn:se
                                         | otherwise         = ASSequence [asn] : ASSequence seqs : segs
 
 asPathLength :: ASPath -> Int
-asPathLength (ASPath2 asp) = asPathLength' asp
-asPathLength (ASPath4 asp) = asPathLength' asp
-asPathLength' = foldl' addSegLength 0 where
+--asPathLength (ASPath2 asp) = asPathLength' asp
+--asPathLength (ASPath4 asp) = asPathLength' asp
+asPathLength = foldl' addSegLength 0 where
     addSegLength acc (ASSet _ ) = acc + 1
     addSegLength acc (ASSequence ax ) = acc + length ax
 
@@ -103,21 +88,26 @@ as2list = map fromIntegral
 as4list :: Integral a => [a] -> [Word32]
 as4list = map fromIntegral
 
-instance Binary ASPath where
-    get = do
-        bytes <- getRemainingLazyByteString
-        return $ decodeAS4 bytes
+--instance Binary ASPath where
+    --get = do
+        --bytes <- getRemainingLazyByteString
+        --return $ decodeAS4 bytes
 
-    put (ASPath2 asp) = put asp
-    put (ASPath4 asp) = put asp
+    --put (ASPath2 asp) = put asp
+    --put (ASPath4 asp) = put asp
 
 decodeAsASPath2 :: L.ByteString -> ASPath
-decodeAsASPath2 bytes = ASPath2 (decode bytes)
+decodeAsASPath2 = decode
 
 decodeAsASPath4 :: L.ByteString -> ASPath
-decodeAsASPath4 bytes = ASPath4 (decode bytes)
+decodeAsASPath4 = decode
 
-instance (ASNumber asn) => Binary (ASSegment asn) where 
+putASSegmentElement :: ASSegmentElementTypeCode -> [Word32] -> Put
+putASSegmentElement code asns = do putWord8 (encode8 code)
+                                   putWord8 (fromIntegral $ length asns)
+                                   putn asns
+
+instance Binary ASSegment where 
 
     put (ASSet asns) = putASSegmentElement EnumASSet asns
     put (ASSequence asns) = putASSegmentElement EnumASSequence asns
@@ -138,14 +128,9 @@ instance (ASNumber asn) => Binary (ASSegment asn) where
                                          return (asn:asns)
 
 
-
-
 decodeAS4 = fromRight' . parseOnly path . L.toStrict 
     where
     fromRight' (Right b ) = b
-
-type ASSegment2 = ASSegment Word16
-type ASSegment4 = ASSegment Word32
 
 path :: Parser ASPath
 path = path4 <|> path2
@@ -153,13 +138,14 @@ path2 :: Parser ASPath
 path2 = do
     segs <- many' asSetOrSeq2
     endOfInput
-    return $ ASPath2 segs
+    return segs
 
-asSetOrSeq2 :: Parser ASSegment2
+asSetOrSeq2 :: Parser ASSegment
 asSetOrSeq2 = do
     segType <- satisfy isSetOrSeq
     asCount <- anyWord8
-    rvals <- count (fromIntegral asCount) anyWord16be
+    --rvals <- (fmap (map fromIntegral)) $ count (fromIntegral asCount) anyWord16be
+    rvals <- map fromIntegral <$> count (fromIntegral asCount) anyWord16be
     return $ if segType == enumASSet then ASSet rvals else ASSequence rvals where
         isSetOrSeq b = b == enumASSet || b == enumASSequence
 
@@ -167,9 +153,9 @@ path4 :: Parser ASPath
 path4 = do
     segs <- many' asSetOrSeq4
     endOfInput
-    return $ ASPath4 segs
+    return segs
 
-asSetOrSeq4 :: Parser ASSegment4
+asSetOrSeq4 :: Parser ASSegment
 asSetOrSeq4 = do
     segType <- satisfy isSetOrSeq
     asCount <- anyWord8
