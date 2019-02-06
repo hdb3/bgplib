@@ -19,6 +19,10 @@ import Codes
 import LibCommon
 import ASPath
 
+-- for some this function may be all that is ever wanted....
+decodeAttributes :: L.ByteString -> [PathAttribute]
+decodeAttributes = runGet ( get :: Get [PathAttribute] )
+
 data ExtendedCommunities = ExtendedCommunities deriving (Show,Eq)
 type LargeCommunity = (Word32,Word32,Word32)
 
@@ -241,8 +245,6 @@ instance {-# OVERLAPPING #-} Binary [PathAttribute] where
 
     put = putn
     get = getn
-
-decodeAttributes = runGet ( get :: Get [PathAttribute] )
 
 instance {-# OVERLAPPING #-} Binary [Word64] where
 
