@@ -56,6 +56,8 @@ instance Read Prefix where
         readSipfx s = let (a,s') = head $ readsPrec 0 s in [(fromAddrRange a,s')]
 
 instance Hashable Prefix
+instance Hashable IPv4
+instance Hashable IPv6
 
 instance {-# INCOHERENT #-} Show [Prefix] where
     show = shorten

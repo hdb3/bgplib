@@ -18,6 +18,7 @@ import Control.Monad
 import Codes
 import LibCommon
 import ASPath
+import Prefixes
 
 -- for some this function may be all that is ever wanted....
 decodeAttributes :: L.ByteString -> [PathAttribute]
@@ -73,7 +74,7 @@ data PathAttribute = PathAttributeOrigin Word8 | -- toDo = make the parameter an
                      PathAttributeUnknown B.ByteString
                      deriving (Show,Eq,Generic)
 instance Hashable PathAttribute
-instance Hashable IPv4
+--instance Hashable IPv4
 
 -- binary format for attributes is 1 byte flags, 1 byte type code, 1 or 2 byte length value depending on a flag bit, then payload
 
